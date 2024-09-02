@@ -59,7 +59,7 @@ const HashPulse = () => {
 
     const shareOnX = () => {
       const text = `Check out my Hashnode analytics! I've reached ${totalViews} total views. 🚀 #HashnodePulse`;
-      const shareUrl = `http://localhost:3000/generate-image?u=${encodeURIComponent(queryUsername)}&v=${totalViews}&p=${data.user.profilePicture}`;
+      const shareUrl = `https://hashpulse-backend.onrender.com/generate-image?u=${encodeURIComponent(queryUsername)}&v=${totalViews}&p=${data.user.profilePicture}`;
     
       const twitterShareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`;
       window.open(twitterShareUrl, '_blank');
