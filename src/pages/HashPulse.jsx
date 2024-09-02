@@ -33,7 +33,6 @@ const GET_USER_VIEWS = gql`
 const HashPulse = () => {
   const [username, setUsername] = useState('');
   const [queryUsername, setQueryUsername] = useState('');
-
   const { loading, error, data } = useQuery(GET_USER_VIEWS, {
     variables: { username: queryUsername },
     skip: !queryUsername,
@@ -45,7 +44,7 @@ const HashPulse = () => {
   };
 
   const processData = () => {
-    if (!data) return [];
+    if (!data || !data.user || !data.user.publications.edges.length) return [];
     const posts = data.user.publications.edges[0].node.posts.edges;
     return posts.map(({ node }) => ({
       title: node.title,
@@ -54,16 +53,18 @@ const HashPulse = () => {
     }));
   };
 
-  const totalViews = data
+  const totalViews = data && data.user && data.user.publications.edges.length
     ? data.user.publications.edges[0].node.posts.edges.reduce((sum, { node }) => sum + node.views, 0)
     : 0;
 
-  const shareOnX = () => {
-    const text = `Check out my Hashnode analytics! I've reached ${totalViews} total views. 🚀 #HashnodePulse`;
-    const url = `http://localhost:3000/generate-image?username=${queryUsername}&views=${totalViews}`;
-    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-    window.open(shareUrl, '_blank');
-  };
+    const shareOnX = () => {
+      const text = `Check out my Hashnode analytics! I've reached ${totalViews} total views. 🚀 #HashnodePulse`;
+      const shareUrl = `http://localhost:3000/generate-image?u=${encodeURIComponent(queryUsername)}&v=${totalViews}&p=${data.user.profilePicture}`;
+    
+      const twitterShareUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`;
+      window.open(twitterShareUrl, '_blank');
+    };
+    
 
   return (
     <div className="w-full max-w-2xl mx-auto mt-10 p-4">
@@ -89,33 +90,47 @@ const HashPulse = () => {
       </Card>
 
       {error && <p className="text-red-500">Error: {error.message}</p>}
+      
+      {!loading && queryUsername && !data && (
+        <Card className="bg-red-100 text-red-700 p-4 mb-4 rounded-md">
+          <CardContent>
+            <p>User not found. Please check the username and try again.</p>
+          </CardContent>
+        </Card>
+      )}
 
       {data && (
-        <Card className="bg-gradient-to-br from-purple-600 to-indigo-600 text-white">
+        <Card className="bg-gradient-to-br from-purple-600 to-indigo-600 text-white rounded-lg shadow-lg">
           <CardContent className="p-6">
-            <div className="flex items-center mb-4">
-              <img src={data.user.profilePicture} alt={data.user.name} className="w-16 h-16 rounded-full mr-4 border-2 border-white" />
-              <div>
-                <h2 className="text-2xl font-semibold">{data.user.name}'s Pulse</h2>
-                <p className="text-xl">Total Views: <span className="font-bold">{totalViews}</span></p>
-              </div>
-            </div>
-            
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={processData()}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ccc" />
-                <XAxis dataKey="date" stroke="#fff" />
-                <YAxis stroke="#fff" />
-                <Tooltip contentStyle={{ backgroundColor: '#333', border: 'none' }} />
-                <Legend />
-                <Line type="monotone" dataKey="views" stroke="#fff" strokeWidth={2} dot={{ fill: '#fff' }} activeDot={{ r: 8 }} />
-              </LineChart>
-            </ResponsiveContainer>
+            {data.user ? (
+              <>
+                <div className="flex items-center mb-4">
+                  <img src={data.user.profilePicture} alt={data.user.name} className="w-16 h-16 rounded-full mr-4 border-2 border-white" />
+                  <div>
+                    <h2 className="text-2xl font-semibold">{data.user.name}'s Pulse</h2>
+                    <p className="text-xl">Total Views: <span className="font-bold">{totalViews}</span></p>
+                  </div>
+                </div>
 
-            <Button onClick={shareOnX} className="mt-4 bg-black hover:bg-gray-800 text-white flex items-center">
-              <img  src="/twitter.png" alt="X (Twitter) logo" width={20} height={20} className="mr-2" />
-              Share on X
-            </Button>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={processData()}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#ccc" />
+                    <XAxis dataKey="date" stroke="#fff" />
+                    <YAxis stroke="#fff" />
+                    <Tooltip contentStyle={{ backgroundColor: '#333', border: 'none' }} />
+                    <Legend />
+                    <Line type="monotone" dataKey="views" stroke="#fff" strokeWidth={2} dot={{ fill: '#fff' }} activeDot={{ r: 8 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+
+                <Button onClick={shareOnX} className="mt-4 bg-black hover:bg-gray-800 text-white flex items-center rounded-md shadow-md">
+                  <img src="/twitter.png" alt="X (Twitter) logo" width={20} height={20} className="mr-2" />
+                  Share on X
+                </Button>
+              </>
+            ) : (
+              <p>No user data found. Please try a different username.</p>
+            )}
           </CardContent>
         </Card>
       )}
